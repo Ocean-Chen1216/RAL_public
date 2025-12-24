@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>風險評估表生成器</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 20px; font-weight: 800; letter-spacing: 1px; }
+        
+        .container { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            width: 98%; 
+            margin: auto; 
+            overflow-x: auto; 
+        }
+        
+        /* --- Header Inputs Area --- */
+        .header-inputs { 
+            display: flex; 
+            gap: 20px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+            background: #ffffff; 
+            padding: 20px; 
+            border: 1px solid #e0e0e0;
+            border-radius: 8px; 
+        }
+        .header-inputs div { display: flex; flex-direction: column; min-width: 160px; flex: 1; }
+        .header-inputs label { font-weight: bold; margin-bottom: 8px; font-size: 0.9rem; color: #555; }
+        .header-inputs input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9; transition: 0.3s; }
+        .header-inputs input:focus { border-color: #3498db; background: #fff; outline: none; }
+
+        /* --- Toggle Button & Reference Section --- */
+        .toggle-bar {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid #ffeeba;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        .toggle-bar:hover { background: #ffe8a1; transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .toggle-icon { font-size: 1.2rem; margin-right: 10px; background: #856404; color: white; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; }
+        
+        .ref-section { display: none; margin-bottom: 20px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #eee; border-top: 4px solid #ffc107; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .ref-content { display: flex; gap: 40px; flex-wrap: wrap; }
+        .ref-col h4 { border-bottom: 2px solid #eee; padding-bottom: 5px; color: #555; margin-top: 0; }
+        .ref-col ul { font-size: 0.9rem; padding-left: 20px; line-height: 1.6; color: #666; }
+        
+        /* --- Main Table Styling --- */
+        table.main-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1800px; border: 1px solid #ddd; border-radius: 8px 8px 0 0; overflow: hidden; }
+        
+        th, td { border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 10px; vertical-align: top; font-size: 0.9rem; position: relative; }
+        th { color: white; text-align: center; white-space: nowrap; position: sticky; top: 0; z-index: 10; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        
+        /* === Section Colors for Headers (Updated) === */
+        
+        /* 1. Basic Info - Blue Grey (維持灰藍) */
+        th.sec-info { background-color: #576574; } 
+        
+        /* 2. Operational Conditions - Teal (新增：土耳其藍，區隔第2項) */
+        th.sec-condition { background-color: #0097e6; }
+
+        /* Hazard ID - Orange (維持橘色) */
+        th.sec-hazard { background-color: #e67e22; }
+        
+        /* 3. Controls - Green (維持綠色) */
+        th.sec-control { background-color: #27ae60; }
+        
+        /* 4. Risk Assessment - Red (維持紅色) */
+        th.sec-risk { background-color: #c0392b; }
+        
+        /* 5. Measures & Post Risk - Purple (維持紫色) */
+        th.sec-measure { background-color: #8e44ad; }
+
+        /* Column Widths */
+        .w-xs { width: 50px; }  
+        .w-no { width: 90px; }  
+        .w-name { width: 160px; } 
+        .w-sm { width: 100px; }
+        .w-md { width: 140px; }
+        .w-lg { width: 220px; }
+        .w-xl { width: 280px; }
+        
+        /* --- Tooltip System --- */
+        .info-icon { cursor: help; margin-left: 4px; opacity: 0.8; font-size: 0.9em; }
+        .info-icon:hover { opacity: 1; color: #fff; }
+        
+        .tooltip-box {
+            display: none;
+            position: absolute;
+            background: rgba(30, 30, 30, 0.95);
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            width: 260px;
+            text-align: left;
+            white-space: normal;
+            z-index: 100;
+            top: 100%; 
+            line-height: 1.5;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: none; /* Let clicks pass through */
+        }
+        
+        /* Default Tooltip: Center aligned */
+        .tooltip-center { left: 50%; transform: translateX(-50%); }
+        /* Left Tooltip: For first few columns (Fixes clipping issue) */
+        .tooltip-left { left: 0; transform: translateX(0); }
+        
+        th:hover .tooltip-box { display: block; animation: fadeIn 0.2s ease-in; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Inputs & Risk Cells --- */
+        input, select, textarea { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 0.9rem; resize: vertical; min-height: 60px; }
+        input:focus, select:focus, textarea:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+        input::placeholder, textarea::placeholder { color: #aaa; }
+
+        .risk-cell { font-weight: 800; text-align: center; vertical-align: middle; font-size: 1.2rem; border-radius: 4px; text-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .risk-5 { background-color: #ff4757; color: white; } 
+        .risk-4 { background-color: #ffa502; color: white; } 
+        .risk-3 { background-color: #f1c40f; color: black; } 
+        .risk-2 { background-color: #2ed573; color: white; } 
+        .risk-1 { background-color: #7bed9f; color: black; } 
+
+        /* --- Action Buttons --- */
+        .btn-group { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
+        button.action-btn { padding: 12px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px; }
+        button.action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        
+        .btn-add { background-color: #20bf6b; color: white; }
+        .btn-add:hover { background-color: #26de81; }
+        
+        .btn-export { background-color: #3867d6; color: white; }
+        .btn-export:hover { background-color: #4b7bec; }
+        
+        .btn-remove { background-color: #ff6b6b; color: white; padding: 6px 10px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .btn-remove:hover { background-color: #ee5253; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>✒️風險評估表生成器</h1>
+    
+    <div class="header-inputs">
+        <div><label>公司名稱</label><input type="text" id="companyName" value="聚陽實業股份有限公司"></div>
+        <div><label>部門</label><input type="text" id="department" placeholder="例如: 生產部"></div>
+        <div><label>評估日期</label><input type="date" id="date"></div>
+        <div><label>評估人員</label><input type="text" id="assessor" placeholder="填表人姓名"></div>
+        <div><label>審核者</label><input type="text" id="reviewer" placeholder="主管姓名"></div>
+    </div>
+
+    <div class="toggle-bar" onclick="toggleRef()">
+        <div style="display: flex; align-items: center;">
+            <span class="toggle-icon">!</span>
+            <span>分級標準參考表 (嚴重度 S / 可能性 P / 風險矩陣)</span>
+        </div>
+        <span id="toggleArrow">▼ 展開</span>
+    </div>
+
+    <div id="refSection" class="ref-section">
+        <div class="ref-content">
+            <div class="ref-col" style="flex:1">
+                <h4>嚴重度 (S)</h4>
+                <ul>
+                    <li><strong>S4 重大</strong>: 一人以上死亡 / 永久失能 / 廠外重大洩漏</li>
+                    <li><strong>S3 高度</strong>: 永久失能 / 職業病 / 廠內外中量洩漏</li>
+                    <li><strong>S2 中度</strong>: 須外送就醫 / 工時損失 / 廠區局部洩漏</li>
+                    <li><strong>S1 輕度</strong>: 僅須急救 / 無工時損失 / 微量洩漏</li>
+                </ul>
+            </div>
+            <div class="ref-col" style="flex:1">
+                <h4>可能性 (P)</h4>
+                <ul>
+                    <li><strong>P4 極可能</strong>: >1次/年 (無防護設施)</li>
+                    <li><strong>P3 較有可能</strong>: 1次/1-10年 (部分防護/未保養)</li>
+                    <li><strong>P2 有可能</strong>: 1次/10-100年 (有防護且保養)</li>
+                    <li><strong>P1 不太可能</strong>: <1次/100年 (雙重防護有效)</li>
+                </ul>
+            </div>
+            <div class="ref-col" style="flex:1">
+                <h4>風險等級</h4>
+                <ul>
+                    <li><span style="color:#ff4757">● 5 重大</span>: 立即改善/停工</li>
+                    <li><span style="color:#ffa502">● 4 高度</span>: 限期改善</li>
+                    <li><span style="color:#f1c40f">● 3 中度</span>: 逐步改善</li>
+                    <li><span style="color:#2ed573">● 2 低度</span>: 維持有效</li>
+                    <li><span style="color:#7bed9f">● 1 輕度</span>: 維持有效</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <table id="assessmentTable" class="main-table">
+        <thead>
+            <tr>
+                <th class="w-xs sec-info">操作</th>
+                
+                <th class="w-no sec-info">1.作業<br>編號
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-left">部門代號＋流水號 (例如: SR-01)</div>
+                </th>
+                <th class="w-name sec-info">作業<br>名稱
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-left">範圍須涵蓋所有可能出現於公司的員工、承攬人、供應商及訪客等之相關作業(含非例行性)。</div>
+                </th>
+                
+                <th class="w-sm sec-condition">2.作業<br>週期
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">係指該作業之執行頻率。例如: 連續式、每日、每週、每月、一年一次等。</div>
+                </th>
+                <th class="w-sm sec-condition">作業<br>環境
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">執行場所及環境狀況。例如: 辦公室、潔淨室、噪音、粉塵、高/低溫、擁擠、異常氣壓、高架、局限空間等。</div>
+                </th>
+                <th class="w-md sec-condition">機械/設備<br>/工具
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">例如: 電腦、電動手工具、起重機、堆高機、衝床、化學設備、鍋爐、高壓容器等。</div>
+                </th>
+                <th class="w-md sec-condition">能源/<br>化學物質
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">接觸之化學品(如乙醚、丙酮、顯影液)或能源(如電力、熱能)。</div>
+                </th>
+                <th class="w-sm sec-condition">作業<br>資格
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">法規要求之訓練或證照(如堆高機證照)、公司內部要求等。</div>
+                </th>
+                
+                <th class="w-sm sec-hazard">危害<br>類型
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">潛在危害分類: 墜落、衝撞、被夾被捲、被刺割、感電、火災爆炸、化學品洩漏、不當動作(人因)等。</div>
+                </th>
+                <th class="w-xl sec-hazard">危害可能造成<br>後果之情境描述
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">詳述原因及災害情境。例如:「人員進入坑內因氧氣濃度過低導致缺氧」、「衣物被輸送帶捲入導致骨折」。</div>
+                </th>
+                
+                <th class="w-md sec-control">3.工程<br>控制
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">硬體防護裝置。例如: 護欄、護罩、雙手操作裝置、漏電斷路器、通風排氣裝置、防爆設備。</div>
+                </th>
+                <th class="w-md sec-control">管理<br>控制
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">軟體管理措施。例如: 教育訓練、SOP、自動檢查、工作許可、上鎖掛籤(LOTO)、健康檢查。</div>
+                </th>
+                <th class="w-md sec-control">個人<br>防護具
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">最後一道防線。例如: 防塵口罩、耐酸鹼手套、護目鏡、安全鞋、安全帶。</div>
+                </th>
+                
+                <th class="w-sm sec-risk">嚴重度<br>(S)
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">判定後果嚴重程度(S4重大~S1輕度)。請參考上方標準表。</div>
+                </th>
+                <th class="w-sm sec-risk">可能性<br>(P)
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">判定發生機率(P4極可能~P1不太可能)。考量現有防護之有效性。</div>
+                </th>
+                <th class="w-sm sec-risk">4.風險<br>等級
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center">矩陣計算結果: 5(重大/紅)、4(高度/橘)、3(中度/黃)、2(低度/綠)、1(輕度/淺綠)。</div>
+                </th>
+                
+                <th class="w-xl sec-measure">5.降低風險所採取<br>之控制措施
+                    <span class="info-icon">ⓘ</span>
+                    <div class="tooltip-box tooltip-center" style="right:0; left:auto; transform:none;">改善優先順序: 1.消除 2.取代 3.工程控制 4.管理控制 5.防護具。<br>重大/高度風險須立即或限期改善。</div>
+                </th>
+                <th class="w-sm sec-measure">控制後<br>S</th>
+                <th class="w-sm sec-measure">控制後<br>P</th>
+                <th class="w-sm sec-measure">6.控制後<br>風險</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <div class="btn-group">
+        <button class="action-btn btn-add" onclick="addRow()">+ 新增作業項目</button>
+        <button class="action-btn btn-export" onclick="exportCSV()">匯出 Excel CSV</button>
+    </div>
+</div>
+
+<script>
+    // Logic Data
+    const riskMatrix = {"S4": {"P4": 5, "P3": 4, "P2": 4, "P1": 3}, "S3": {"P4": 4, "P3": 4, "P2": 3, "P1": 3}, "S2": {"P4": 4, "P3": 3, "P2": 3, "P1": 2}, "S1": {"P4": 3, "P3": 3, "P2": 2, "P1": 1}};
+    
+    const sDesc = {
+        "S4": "S4 重大: 死亡/永久失能/廠外洩漏",
+        "S3": "S3 高度: 永久失能/職業病/中量洩漏",
+        "S2": "S2 中度: 外送就醫/工時損失/少量洩漏",
+        "S1": "S1 輕度: 僅須急救/無損失/微量洩漏"
+    };
+    const pDesc = {
+        "P4": "P4 極可能: >1次/年 (無防護)",
+        "P3": "P3 較有可能: 1-10年1次 (部分防護)",
+        "P2": "P2 有可能: 10-100年1次 (有防護)",
+        "P1": "P1 不太可能: <100年1次 (雙重防護)"
+    };
+
+    const commonHazards = ["被刺、被捲", "被割、被切", "高溫、火災", "墜落、滾落", "物體飛落", "物體倒塌", "感電", "化學品洩漏", "不當動作(人因)", "缺氧"];
+    const commonCycles = ["每日", "每週", "每月", "每季", "每年", "非例行性"];
+    const commonEnvs = ["室內", "室外", "高溫", "潮濕", "噪音區", "粉塵區", "實驗室", "辦公室", "局限空間"];
+
+    function toggleRef() {
+        const ref = document.getElementById('refSection');
+        const arrow = document.getElementById('toggleArrow');
+        if (ref.style.display === 'none' || ref.style.display === '') {
+            ref.style.display = 'block';
+            arrow.textContent = '▲ 收合';
+        } else {
+            ref.style.display = 'none';
+            arrow.textContent = '▼ 展開';
+        }
+    }
+
+    function createOptions(optionsObj) {
+        let html = '<option value="">請選擇</option>';
+        for (let key in optionsObj) {
+            html += `<option value="${key}">${optionsObj[key]}</option>`;
+        }
+        return html;
+    }
+
+    function addRow() {
+        const tbody = document.querySelector("#assessmentTable tbody");
+        const tr = document.createElement("tr");
+        
+        tr.innerHTML = `
+            <td><button class="btn-remove" onclick="this.closest('tr').remove()">刪除</button></td>
+            
+            <td><input type="text" name="col_no" placeholder="SR-01"></td>
+            <td><textarea name="col_name" placeholder="車縫作業"></textarea></td>
+            
+            <td><input list="cycleList" name="col2" placeholder="選/填..."><datalist id="cycleList">${commonCycles.map(c=>`<option value="${c}">`).join('')}</datalist></td>
+            
+            <td><input list="envList" name="col3" placeholder="選/填..."><datalist id="envList">${commonEnvs.map(c=>`<option value="${c}">`).join('')}</datalist></td>
+            
+            <td><textarea name="col4" placeholder="例如: 堆高機"></textarea></td>
+            <td><textarea name="col5" placeholder="例如: 電力"></textarea></td>
+            <td><textarea name="col6" placeholder="例如: 操作證"></textarea></td>
+            
+            <td><input list="hazardList" name="col7" placeholder="選/填..."><datalist id="hazardList">${commonHazards.map(c=>`<option value="${c}">`).join('')}</datalist></td>
+            
+            <td><textarea name="col8" placeholder="描述後果..."></textarea></td>
+            <td><textarea name="col9" placeholder="工程控制"></textarea></td>
+            <td><textarea name="col10" placeholder="管理控制"></textarea></td>
+            <td><textarea name="col11" placeholder="PPE"></textarea></td>
+            
+            <td><select name="s_pre" onchange="calcRisk(this)">${createOptions(sDesc)}</select></td>
+            <td><select name="p_pre" onchange="calcRisk(this)">${createOptions(pDesc)}</select></td>
+            <td class="risk-cell" id="risk_pre"></td>
+            
+            <td><textarea name="col15" placeholder="改善措施..."></textarea></td>
+            
+            <td><select name="s_post" onchange="calcRisk(this)">${createOptions(sDesc)}</select></td>
+            <td><select name="p_post" onchange="calcRisk(this)">${createOptions(pDesc)}</select></td>
+            <td class="risk-cell" id="risk_post"></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    function calcRisk(element) {
+        const row = element.closest('tr');
+        const type = element.name.includes('pre') ? 'pre' : 'post';
+        
+        const s = row.querySelector(`select[name="s_${type}"]`).value;
+        const p = row.querySelector(`select[name="p_${type}"]`).value;
+        const resultCell = row.querySelector(`#risk_${type}`);
+        
+        if (s && p) {
+            const level = riskMatrix[s][p];
+            let className = "risk-" + level;
+            let label = level;
+            
+            if(level >= 5) label += " (重大)";
+            else if(level == 4) label += " (高度)";
+            else if(level == 3) label += " (中度)";
+            else if(level == 2) label += " (低度)";
+            else label += " (輕度)";
+
+            resultCell.textContent = label;
+            resultCell.className = "risk-cell " + className;
+            resultCell.dataset.value = label; 
+        } else {
+            resultCell.textContent = "";
+            resultCell.className = "risk-cell";
+            resultCell.dataset.value = "";
+        }
+    }
+
+    function exportCSV() {
+        const company = document.getElementById('companyName').value.trim();
+        const dept = document.getElementById('department').value.trim();
+        const date = document.getElementById('date').value.trim();
+        const assessor = document.getElementById('assessor').value.trim();
+        const reviewer = document.getElementById('reviewer').value.trim();
+
+        let csv = [];
+        csv.push(`公司名稱,,部門,,評估日期,,評估人員,,,,審核者,,,,,,,,`);
+        csv.push(`${company},,${dept},,${date},,${assessor},,,,${reviewer},,,,,,,,`);
+        csv.push(`作業編號,作業名稱,作業週期,作業環境,機械/設備/工具,能源/化學物質,作業資格,危害類型,危害可能造成後果之情境描述,工程控制,管理控制,個人防護具,嚴重度(S),可能性(P),風險等級,降低風險所採取之控制措施,控制後嚴重度,控制後可能性,控制後風險等級,`);
+
+        document.querySelectorAll("#assessmentTable tbody tr").forEach(tr => {
+            let row = [];
+            const getVal = (name) => `"${(tr.querySelector(`[name="${name}"]`)?.value || "").replace(/"/g, '""')}"`;
+            const getRisk = (id) => `"${(tr.querySelector(`#${id}`).dataset.value || "").replace(/"/g, '""')}"`;
+
+            row.push(getVal("col_no"));   
+            row.push(getVal("col_name")); 
+            row.push(getVal("col2")); 
+            row.push(getVal("col3")); 
+            row.push(getVal("col4")); 
+            row.push(getVal("col5")); 
+            row.push(getVal("col6")); 
+            row.push(getVal("col7")); 
+            row.push(getVal("col8")); 
+            row.push(getVal("col9")); 
+            row.push(getVal("col10")); 
+            row.push(getVal("col11")); 
+            
+            row.push(getVal("s_pre"));
+            row.push(getVal("p_pre"));
+            row.push(getRisk("risk_pre"));
+            
+            row.push(getVal("col15")); 
+            
+            row.push(getVal("s_post"));
+            row.push(getVal("p_post"));
+            row.push(getRisk("risk_post"));
+            
+            csv.push(row.join(","));
+        });
+
+        const csvContent = "\uFEFF" + csv.join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `風險評估表_${date || 'new'}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    window.onload = addRow;
+</script>
+
+</body>
+</html>
