@@ -3,161 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>專業風險評估 App</title>
+    <title>風險評估表生成器</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        body { font-family: "Microsoft JhengHei", sans-serif; margin: 0; background-color: #f4f7f9; color: #333; }
-        .container { padding: 15px; max-width: 1400px; margin: auto; }
-        h1 { text-align: center; color: #2c3e50; font-size: 1.4rem; margin: 20px 0; }
-
-        /* --- 頂部基本資料 --- */
-        .header-inputs { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 12px; background: white; padding: 20px; border-radius: 12px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px;
-        }
-        .header-inputs div { display: flex; flex-direction: column; }
-        .header-inputs label { font-weight: bold; font-size: 0.85rem; color: #7f8c8d; margin-bottom: 5px; }
-        .header-inputs input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
-
-        /* --- 電腦版表格樣式 --- */
-        .table-wrapper { background: white; border-radius: 12px; overflow-x: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; min-width: 1600px; }
-        th { background: #34495e; color: white; padding: 12px; font-size: 0.85rem; text-align: center; position: sticky; top: 0; }
-        td { border-bottom: 1px solid #eee; padding: 8px; }
-        textarea, select, input[type="text"] { width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 6px; box-sizing: border-box; font-size: 0.9rem; }
-
-        /* --- 📱 行動版卡片化核心 (關鍵優化) --- */
-        @media (max-width: 992px) {
-            table, thead, tbody, th, td, tr { display: block; }
-            table { min-width: 100%; }
-            thead { display: none; } /* 隱藏表頭 */
-            
-            tr { 
-                background: white; border: 1px solid #dcdde1; border-radius: 15px; 
-                margin-bottom: 30px; padding: 15px; position: relative;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            }
-
-            /* 為不同群組上色，讓手機版更好閱讀 */
-            td { 
-                display: flex; justify-content: space-between; align-items: center;
-                border: none; padding: 10px 0; border-bottom: 1px dashed #f1f2f6;
-            }
-            td::before { 
-                content: attr(data-label); 
-                font-weight: bold; color: #2980b9; width: 40%; font-size: 0.85rem; text-align: left;
-            }
-            td > * { width: 55% !important; }
-
-            /* 風險計算格特別加強 */
-            .risk-cell { 
-                width: 100% !important; height: 45px; line-height: 45px; 
-                margin-top: 10px; border-radius: 8px; font-size: 1.1rem;
-            }
-            
-            .btn-remove { 
-                width: 100%; background: #e74c3c; color: white; border: none; 
-                padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px;
-            }
-        }
-
-        /* 風險顏色 */
-        .risk-cell { font-weight: bold; text-align: center; border: 1px solid #eee; }
-        .risk-5 { background: #ff4757; color: white; }
-        .risk-4 { background: #ffa502; color: white; }
-        .risk-3 { background: #f1c40f; color: black; }
-        .risk-2 { background: #2ed573; color: white; }
-        .risk-1 { background: #7bed9f; color: black; }
-
-        .btn-group { display: flex; gap: 10px; margin: 30px 0; flex-wrap: wrap; justify-content: center; }
-        .action-btn { padding: 15px 30px; border-radius: 10px; border: none; color: white; font-weight: bold; cursor: pointer; min-width: 150px; }
-        .btn-add { background: #27ae60; }
-        .btn-export { background: #2980b9; }
-        .btn-clear { background: #7f8c8d; }
+        body { font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 20px; font-weight: 800; letter-spacing: 1px; }
+        .container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); width: 98%; margin: auto; overflow-x: auto; }
+        .header-inputs { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; background: #ffffff; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; }
+        .header-inputs div { display: flex; flex-direction: column; min-width: 160px; flex: 1; }
+        .header-inputs label { font-weight: bold; margin-bottom: 8px; font-size: 0.9rem; color: #555; }
+        .header-inputs input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9; transition: 0.3s; }
+        .header-inputs input:focus { border-color: #3498db; background: #fff; outline: none; }
+        .toggle-bar { background: #fff3cd; color: #856404; padding: 12px 20px; border-radius: 8px; border: 1px solid #ffeeba; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-weight: bold; margin-bottom: 10px; }
+        .ref-section { display: none; margin-bottom: 20px; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #eee; border-top: 4px solid #ffc107; }
+        .ref-content { display: flex; gap: 40px; flex-wrap: wrap; }
+        table.main-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1800px; border: 1px solid #ddd; }
+        th, td { border-right: 1px solid #ddd; border-bottom: 1px solid #ddd; padding: 10px; vertical-align: top; font-size: 0.9rem; }
+        th { color: white; background-color: #576574; position: sticky; top: 0; z-index: 10; }
+        th.sec-condition { background-color: #0097e6; }
+        th.sec-hazard { background-color: #e67e22; }
+        th.sec-control { background-color: #27ae60; }
+        th.sec-risk { background-color: #c0392b; }
+        th.sec-measure { background-color: #8e44ad; }
+        .risk-cell { font-weight: 800; text-align: center; vertical-align: middle; font-size: 1.2rem; }
+        .risk-5 { background-color: #ff4757; color: white; } 
+        .risk-4 { background-color: #ffa502; color: white; } 
+        .risk-3 { background-color: #f1c40f; color: black; } 
+        .risk-2 { background-color: #2ed573; color: white; } 
+        .risk-1 { background-color: #7bed9f; color: black; } 
+        .btn-group { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
+        button.action-btn { padding: 12px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; color: white; }
+        .btn-add { background-color: #20bf6b; }
+        .btn-export { background-color: #3867d6; }
+        .btn-clear { background-color: #95a5a6; }
+        .btn-remove { background-color: #ff6b6b; padding: 6px 10px; font-size: 12px; border: none; border-radius: 4px; color: white; cursor: pointer; }
+        textarea, select, input[type="text"] { width: 100%; border: 1px solid #ccc; border-radius: 4px; padding: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>✒️ 聚陽風險評估系統 (行動同步版)</h1>
-    
+    <h1>✒️風險評估表生成器</h1>
     <div class="header-inputs">
-        <div><label>公司名稱</label><input type="text" id="companyName" value="聚陽實業股份有限公司"></div>
-        <div><label>部門</label><input type="text" id="department"></div>
+        <div><label>公司名稱</label><input type="text" id="companyName" value="xxxx股份有限公司"></div>
+        <div><label>部門</label><input type="text" id="department" placeholder="例如: 生產部"></div>
         <div><label>評估日期</label><input type="date" id="date"></div>
-        <div><label>評估人員</label><input type="text" id="assessor"></div>
-        <div><label>審核者</label><input type="text" id="reviewer"></div>
+        <div><label>評估人員</label><input type="text" id="assessor" placeholder="填表人姓名"></div>
+        <div><label>審核者</label><input type="text" id="reviewer" placeholder="主管姓名"></div>
     </div>
 
-    <div class="table-wrapper">
-        <table id="assessmentTable">
-            <thead>
-                <tr>
-                    <th>操作</th>
-                    <th>1.編號</th><th>作業名稱</th>
-                    <th>2.週期</th><th>環境</th><th>設備</th><th>能源</th><th>資格</th>
-                    <th>危害類型</th><th>情境描述</th>
-                    <th>3.工程</th><th>管理</th><th>PPE</th>
-                    <th>S</th><th>P</th><th>4.風險</th>
-                    <th>5.改善措施</th>
-                    <th>後S</th><th>後P</th><th>6.後風險</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <div class="toggle-bar" onclick="toggleRef()">
+        <span>分級標準參考表 (展開/收合)</span>
+        <span id="toggleArrow">▼ 展開</span>
     </div>
+
+    <div id="refSection" class="ref-section">
+        <div class="ref-content">
+            <div style="flex:1"><h4>嚴重度 (S)</h4><ul style="font-size:0.8rem"><li>S4 重大: 死亡/失能</li><li>S3 高度: 職業病</li><li>S2 中度: 送醫</li><li>S1 輕度: 急救</li></ul></div>
+            <div style="flex:1"><h4>可能性 (P)</h4><ul style="font-size:0.8rem"><li>P4 極可能: >1次/年</li><li>P3 較有可: 1-10年1次</li><li>P2 有可能: 10-100年1次</li><li>P1 不太可: <100年1次</li></ul></div>
+        </div>
+    </div>
+
+    <table id="assessmentTable" class="main-table">
+        <thead>
+            <tr>
+                <th style="width:50px">操作</th>
+                <th class="sec-info">1.作業編號</th>
+                <th class="sec-info">作業名稱</th>
+                <th class="sec-condition">2.作業週期</th>
+                <th class="sec-condition">作業環境</th>
+                <th class="sec-condition">機械設備</th>
+                <th class="sec-condition">能源/化學品</th>
+                <th class="sec-condition">作業資格</th>
+                <th class="sec-hazard">危害類型</th>
+                <th class="sec-hazard">情境描述</th>
+                <th class="sec-control">3.工程控制</th>
+                <th class="sec-control">管理控制</th>
+                <th class="sec-control">個人防護</th>
+                <th class="sec-risk">嚴重度(S)</th>
+                <th class="sec-risk">可能性(P)</th>
+                <th class="sec-risk">4.風險等級</th>
+                <th class="sec-measure">5.降低風險措施</th>
+                <th class="sec-measure">控制後S</th>
+                <th class="sec-measure">控制後P</th>
+                <th class="sec-measure">6.控制後風險</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
     <div class="btn-group">
         <button class="action-btn btn-add" onclick="addRow()">+ 新增作業項目</button>
-        <button class="action-btn btn-export" onclick="exportCSV()">📥 匯出 Excel (CSV)</button>
-        <button class="action-btn btn-clear" onclick="clearAllData()">🗑️ 重置表單</button>
+        <button class="action-btn btn-export" onclick="exportCSV()">匯出 Excel CSV</button>
+        <button class="action-btn btn-clear" onclick="clearAllData()">🗑️ 清空重置</button>
     </div>
 </div>
 
 <script>
     const riskMatrix = {"S4": {"P4": 5, "P3": 4, "P2": 4, "P1": 3}, "S3": {"P4": 4, "P3": 4, "P2": 3, "P1": 3}, "S2": {"P4": 4, "P3": 3, "P2": 3, "P1": 2}, "S1": {"P4": 3, "P3": 3, "P2": 2, "P1": 1}};
+    const sDesc = {"S4": "S4 重大", "S3": "S3 高度", "S2": "S2 中度", "S1": "S1 輕度"};
+    const pDesc = {"P4": "P4 極可能", "P3": "P3 較可能", "P2": "P2 有可能", "P1": "P1 不太可能"};
+
+    function toggleRef() {
+        const ref = document.getElementById('refSection');
+        ref.style.display = (ref.style.display === 'none' || ref.style.display === '') ? 'block' : 'none';
+    }
+
+    function createOptions(optionsObj) {
+        let html = '<option value="">請選擇</option>';
+        for (let key in optionsObj) html += `<option value="${key}">${optionsObj[key]}</option>`;
+        return html;
+    }
 
     function addRow(data = null) {
         const tbody = document.querySelector("#assessmentTable tbody");
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td data-label="管理操作"><button class="btn-remove" onclick="this.closest('tr').remove(); saveAllData();">刪除此列</button></td>
-            <td data-label="1.作業編號"><input type="text" name="col_no"></td>
-            <td data-label="作業名稱"><textarea name="col_name"></textarea></td>
-            <td data-label="2.作業週期"><input type="text" name="col2"></td>
-            <td data-label="作業環境"><input type="text" name="col3"></td>
-            <td data-label="機械設備"><textarea name="col4"></textarea></td>
-            <td data-label="能源/化學品"><textarea name="col5"></textarea></td>
-            <td data-label="作業資格"><input type="text" name="col6"></td>
-            <td data-label="危害類型"><input type="text" name="col7"></td>
-            <td data-label="情境描述"><textarea name="col8"></textarea></td>
-            <td data-label="3.工程控制"><textarea name="col9"></textarea></td>
-            <td data-label="管理控制"><textarea name="col10"></textarea></td>
-            <td data-label="個人防護"><textarea name="col11"></textarea></td>
-            <td data-label="嚴重度 (S)">
-                <select name="s_pre" onchange="calcRisk(this); saveAllData();">
-                    <option value="">請選擇</option><option value="S4">S4 重大</option><option value="S3">S3 高度</option><option value="S2">S2 中度</option><option value="S1">S1 輕度</option>
-                </select>
-            </td>
-            <td data-label="可能性 (P)">
-                <select name="p_pre" onchange="calcRisk(this); saveAllData();">
-                    <option value="">請選擇</option><option value="P4">P4 極可能</option><option value="P3">P3 較可能</option><option value="P2">P2 有可能</option><option value="P1">P1 不太可能</option>
-                </select>
-            </td>
-            <td data-label="4.初評風險" class="risk-cell" id="risk_pre">--</td>
-            <td data-label="5.改善措施"><textarea name="col15"></textarea></td>
-            <td data-label="控制後 S">
-                <select name="s_post" onchange="calcRisk(this); saveAllData();">
-                    <option value="">請選擇</option><option value="S4">S4</option><option value="S3">S3</option><option value="S2">S2</option><option value="S1">S1</option>
-                </select>
-            </td>
-            <td data-label="控制後 P">
-                <select name="p_post" onchange="calcRisk(this); saveAllData();">
-                    <option value="">請選擇</option><option value="P4">P4</option><option value="P3">P3</option><option value="P2">P2</option><option value="P1">P1</option>
-                </select>
-            </td>
-            <td data-label="6.後評風險" class="risk-cell" id="risk_post">--</td>
+            <td><button class="btn-remove" onclick="this.closest('tr').remove(); saveAllData();">刪除</button></td>
+            <td><input type="text" name="col_no"></td>
+            <td><textarea name="col_name"></textarea></td>
+            <td><input type="text" name="col2"></td>
+            <td><input type="text" name="col3"></td>
+            <td><textarea name="col4"></textarea></td>
+            <td><textarea name="col5"></textarea></td>
+            <td><textarea name="col6"></textarea></td>
+            <td><input type="text" name="col7"></td>
+            <td><textarea name="col8"></textarea></td>
+            <td><textarea name="col9"></textarea></td>
+            <td><textarea name="col10"></textarea></td>
+            <td><textarea name="col11"></textarea></td>
+            <td><select name="s_pre" onchange="calcRisk(this); saveAllData();">${createOptions(sDesc)}</select></td>
+            <td><select name="p_pre" onchange="calcRisk(this); saveAllData();">${createOptions(pDesc)}</select></td>
+            <td class="risk-cell" id="risk_pre"></td>
+            <td><textarea name="col15"></textarea></td>
+            <td><select name="s_post" onchange="calcRisk(this); saveAllData();">${createOptions(sDesc)}</select></td>
+            <td><select name="p_post" onchange="calcRisk(this); saveAllData();">${createOptions(pDesc)}</select></td>
+            <td class="risk-cell" id="risk_post"></td>
         `;
         tbody.appendChild(tr);
         if (data) {
@@ -174,11 +155,12 @@
         const type = element.name.includes('pre') ? 'pre' : 'post';
         const s = row.querySelector(`select[name="s_${type}"]`).value;
         const p = row.querySelector(`select[name="p_${type}"]`).value;
-        const res = row.querySelector(`#risk_${type}`);
+        const resultCell = row.querySelector(`#risk_${type}`);
         if (s && p) {
             const level = riskMatrix[s][p];
-            res.textContent = level;
-            res.className = "risk-cell risk-" + level;
+            resultCell.textContent = level;
+            resultCell.className = "risk-cell risk-" + level;
+            resultCell.dataset.value = level;
         }
     }
 
@@ -194,7 +176,10 @@
     }
 
     function clearAllData() {
-        if (confirm("確定重置嗎？")) { localStorage.removeItem('ral_full_backup'); location.reload(); }
+        if (confirm("確定要清空所有內容嗎？")) {
+            localStorage.removeItem('ral_full_backup');
+            location.reload();
+        }
     }
 
     window.addEventListener('load', function() {
@@ -202,7 +187,8 @@
         if (saved) {
             const allData = JSON.parse(saved);
             for (let id in allData.headers) { if(document.getElementById(id)) document.getElementById(id).value = allData.headers[id]; }
-            if (allData.rows.length > 0) allData.rows.forEach(data => addRow(data));
+            document.querySelector("#assessmentTable tbody").innerHTML = "";
+            if (allData.rows.length > 0) allData.rows.forEach(rowData => addRow(rowData));
             else addRow();
         } else { addRow(); }
         document.addEventListener('input', saveAllData);
@@ -210,18 +196,17 @@
 
     function exportCSV() {
         saveAllData();
-        const h = JSON.parse(localStorage.getItem('ral_full_backup')).headers;
-        let csv = ["\uFEFF公司," + h.companyName + ",部門," + h.department + ",日期," + h.date];
-        csv.push("編號,作業名稱,週期,環境,設備,能源,資格,危害類型,情境描述,工程控制,管理控制,PPE,S,P,風險,改善措施,後S,後P,後風險");
+        const company = document.getElementById('companyName').value;
+        const date = document.getElementById('date').value;
+        let csv = ["公司名稱," + company + ",日期," + date, "作業編號,作業名稱,風險等級,控制後風險"];
         document.querySelectorAll("#assessmentTable tbody tr").forEach(tr => {
-            const getVal = (n) => `"${(tr.querySelector(`[name="${n}"]`)?.value || "").replace(/"/g, '""')}"`;
-            let row = [getVal("col_no"), getVal("col_name"), getVal("col2"), getVal("col3"), getVal("col4"), getVal("col5"), getVal("col6"), getVal("col7"), getVal("col8"), getVal("col9"), getVal("col10"), getVal("col11"), getVal("s_pre"), getVal("p_pre"), tr.querySelector('#risk_pre').textContent, getVal("col15"), getVal("s_post"), getVal("p_post"), tr.querySelector('#risk_post').textContent];
-            csv.push(row.join(","));
+            const getVal = (name) => tr.querySelector(`[name="${name}"]`).value;
+            csv.push(`${getVal("col_no")},${getVal("col_name")},${tr.querySelector('#risk_pre').textContent},${tr.querySelector('#risk_post').textContent}`);
         });
-        const blob = new Blob([csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob(["\uFEFF" + csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `風險評估表_${new Date().toLocaleDateString()}.csv`;
+        link.download = `風險評估_${date}.csv`;
         link.click();
     }
 </script>
